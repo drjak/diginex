@@ -17,9 +17,16 @@ def random_number():
 
 random_number = random_number()
 
-def reverting_message(message):
-    reversedstring = ''.join(reversed(message))
-    return reversedstring
+def reverting_message_remote(message):
+    try:
+        res = requests.post('http://jak.slave.arkdevs.ee:6000/reverse', json={"message":message})
+        if res.ok:
+            print ("Response from backend ", res.json())
+            return res.json()
+    except:
+        print "Can't call backend"
+    finally:
+        res.close
 
 @app.route('/', methods=['GET'])
 def home():
@@ -28,21 +35,12 @@ def home():
 @app.route('/api', methods=['POST'])
 def api_post():
     content = request.get_json()
-    print ("Received json: ",content)
-
-    reverted = reverting_message(content['message'])
-
-    res = requests.post('http://localhost:6000/reverse', json={"message":content['message']})
-    print res
-    if res.ok:
-        print res.json()
-#    reverted = remotely_reverted(content['message'])
+    reverted = reverting_message_remote(content['message'])
 
     response = app.response_class(
         response=json.dumps({
-            "message":reverted,
-            "random":random_number,
-            "original":content['message'],
+            "message":reverted['message'],
+            "random":random_number
             }),
         status=200,
         mimetype='application/json'
@@ -50,4 +48,3 @@ def api_post():
     return response
 
 app.run(host='0.0.0.0', port=5000)
-
